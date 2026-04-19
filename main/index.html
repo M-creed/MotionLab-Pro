@@ -1,1 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>MotionLab Pro</title>
+<link rel="stylesheet" href="../style.css" ></linke>
+</head>
+<body>
+<div class="nav">
+  <div class="brand">
+    <div class="brand-logo">
+      <img src="../logo/motionlab.png" alt="MotionLab logo"/>
+    </div>
+    <div>
+      <div class="brand-name">MotionLab Pro</div>
+      <div class="brand-sub">kinematic analysis suite</div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <button class="dm-toggle" onclick="toggleDark()" title="Toggle dark/light mode">
+      <span class="dm-icon sun">☀</span>
+      <span class="dm-knob" id="dm-knob"></span>
+      <span class="dm-icon moon">☾</span>
+    </button>
+    <button class="nbtn" onclick="clearAll()">clear</button>
+    <button class="nbtn" onclick="exportCSV()">export csv</button>
+    <button class="nbtn accent" onclick="addRow()">+ row</button>
+  </div>
+</div>
 
+<div class="body">
+  <div class="left">
+    <div class="sec-lbl">Manual input</div>
+    <div id="pblist-manual"></div>
+    <div class="sec-lbl">Auto-calculated</div>
+    <div id="pblist-auto"></div>
+  </div>
+
+  <div class="right">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('data',this)">data entry</button>
+      <button class="tab" onclick="switchTab('results',this)">results</button>
+      <button class="tab" onclick="switchTab('charts',this)">graphs</button>
+      <button class="tab" onclick="switchTab('formulas',this)">formulas</button>
+    </div>
+
+    <div class="panel active" id="panel-data">
+      <div class="stats-row" id="stats-row"></div>
+      <div id="auto-info-box"></div>
+      <div class="tbl-wrap">
+        <div id="tbl-ct"></div>
+        <button class="add-row-btn" onclick="addRow()">+ add row</button>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-results">
+      <div id="results-ct"></div>
+    </div>
+
+    <div class="panel" id="panel-charts">
+      <div id="charts-ct"></div>
+    </div>
+
+    <div class="panel" id="panel-formulas">
+      <div id="formulas-ct"></div>
+    </div>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="../main.js"></script>
+</body>
+</html>
