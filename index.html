@@ -4,13 +4,14 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>MotionLab Pro</title>
-<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="../style.css" ></linke>
 </head>
 <body>
+
 <div class="nav">
   <div class="brand">
     <div class="brand-logo">
-      <img src="../logo/motionlab.png" alt="MotionLab logo"/>
+      <img src="./logo/motionlab.png" alt="MotionLab logo"/>
     </div>
     <div>
       <div class="brand-name">MotionLab Pro</div>
@@ -24,8 +25,10 @@
       <span class="dm-icon moon">☾</span>
     </button>
     <button class="nbtn" onclick="clearAll()">clear</button>
+    <button class="nbtn" onclick="importCSV()">import csv</button>
     <button class="nbtn" onclick="exportCSV()">export csv</button>
     <button class="nbtn accent" onclick="addRow()">+ row</button>
+    <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleCSVFile(event)"/>
   </div>
 </div>
 
@@ -38,11 +41,15 @@
   </div>
 
   <div class="right">
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('data',this)">data entry</button>
-      <button class="tab" onclick="switchTab('results',this)">results</button>
-      <button class="tab" onclick="switchTab('charts',this)">graphs</button>
-      <button class="tab" onclick="switchTab('formulas',this)">formulas</button>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div class="tabs" style="margin-bottom:0">
+        <button class="tab active" onclick="switchTab('data',this)">data entry</button>
+        <button class="tab" onclick="switchTab('results',this)">results</button>
+        <button class="tab" onclick="switchTab('charts',this)">graphs</button>
+        <button class="tab" onclick="switchTab('formulas',this)">formulas</button>
+      </div>
+      <div style="width:1px;height:24px;background:var(--border2);flex-shrink:0"></div>
+      <button class="nbtn" style="font-size:11px;padding:5px 13px;border-color:var(--purple);color:var(--purple)" onclick="loadSimulateData()" title="Load sample projectile motion data">▶ simulate</button>
     </div>
 
     <div class="panel active" id="panel-data">
@@ -50,15 +57,24 @@
       <div id="auto-info-box"></div>
       <div class="tbl-wrap">
         <div id="tbl-ct"></div>
-        <button class="add-row-btn" onclick="addRow()">+ add row</button>
+        <div class="tbl-footer">
+          <button class="tbl-foot-btn add" onclick="addRow()">+ add row</button>
+          <button class="tbl-foot-btn del" onclick="deleteLastRow()" title="Delete last row">− delete row</button>
+        </div>
       </div>
     </div>
 
     <div class="panel" id="panel-results">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="nbtn" onclick="openSaveResults()" style="font-size:11px">↓ save results</button>
+      </div>
       <div id="results-ct"></div>
     </div>
 
     <div class="panel" id="panel-charts">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+        <button class="nbtn" onclick="openSaveCharts()" style="font-size:11px">↓ save graphs</button>
+      </div>
       <div id="charts-ct"></div>
     </div>
 
@@ -67,11 +83,49 @@
     </div>
   </div>
 </div>
+
+<!-- SAVE RESULTS MODAL -->
+<div class="modal-bg" id="modal-results">
+  <div class="modal">
+    <div class="modal-title">Save Results</div>
+    <div class="modal-row">
+      <div class="modal-lbl">Format</div>
+      <select class="modal-select" id="res-format">
+        <option value="png">PNG image</option>
+        <option value="pdf">PDF document</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeModal('modal-results')">cancel</button>
+      <button class="modal-btn primary" onclick="saveResults()">save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SAVE CHARTS MODAL -->
+<div class="modal-bg" id="modal-charts">
+  <div class="modal">
+    <div class="modal-title">Save Graphs</div>
+    <div class="modal-row">
+      <div class="modal-lbl">Select charts to save</div>
+      <div class="modal-chart-list" id="modal-chart-list"></div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-lbl">Format</div>
+      <select class="modal-select" id="chart-format">
+        <option value="png">PNG image</option>
+        <option value="pdf">PDF document</option>
+      </select>
+    </div>
+    <div class="modal-btns">
+      <button class="modal-btn" onclick="closeModal('modal-charts')">cancel</button>
+      <button class="modal-btn primary" onclick="saveCharts()">save</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="../main.js"></script>
-  <script>
-  window.si = window.si || function () { (window.siq = window.siq || []).push(arguments); };
-</script>
-<script defer src="/_vercel/speed-insights/script.js"></script>
 </body>
 </html>

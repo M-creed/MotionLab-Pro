@@ -400,13 +400,201 @@ function switchTab(id,el){
 
 // ── DATA OPS ──
 function addRow(){rows.push({});renderAll();}
+function deleteLastRow(){if(rows.length>1){rows.pop();renderAll();}}
 function clearAll(){if(confirm('Clear all data?')){rows=[{},{},{}];renderAll();}}
+
+// ── IMPORT CSV ──
+function importCSV(){document.getElementById('csv-file-input').click();}
+function handleCSVFile(e){
+  const file=e.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const lines=ev.target.result.trim().split('\n');
+    if(lines.length<2){alert('CSV must have a header row and at least one data row.');return;}
+    const headers=lines[0].split(',').map(h=>h.trim().replace(/\[AUTO\]/g,'').replace(/\(.*?\)/g,'').trim());
+    // try to match headers to param ids or symbols
+    const paramMap=headers.map(h=>{
+      if(h==='#')return null;
+      return PARAMS.find(p=>p.sym===h||p.id===h)||null;
+    });
+    const newRows=lines.slice(1).map(line=>{
+      const cells=line.split(',');
+      const row={};
+      headers.forEach((h,ci)=>{
+        const p=paramMap[ci];
+        if(p&&cells[ci]!==undefined&&cells[ci].trim()!=='') row[p.id]=cells[ci].trim();
+      });
+      return row;
+    }).filter(r=>Object.keys(r).length>0);
+    if(!newRows.length){alert('No valid data rows found.');return;}
+    rows=newRows;
+    // activate detected columns
+    paramMap.forEach(p=>{if(p)active.add(p.id);});
+    renderAll();
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+// ── EXPORT CSV ──
 function exportCSV(){
   const params=getActive();if(!params.length)return;
   const hdr=['#',...params.map(p=>`${p.sym}(${p.unit})${autoEnabled.has(p.id)?'[AUTO]':''}`)];
   const body=rows.map((r,ri)=>[ri+1,...params.map(p=>{if(autoEnabled.has(p.id)&&p.calc){const v=p.calc(rows,ri);return v!==null?parseFloat(v.toFixed(6)):'';}return r[p.id]||'';})]);
   const csv=[hdr,...body].map(r=>r.join(',')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='motion_analysis.csv';a.click();
+}
+
+// ── SIMULATE ──
+function loadSimulateData(){
+  const g=9.81,v0=15,angle=40*Math.PI/180,dt=0.1;
+  const vx=v0*Math.cos(angle),vy=v0*Math.sin(angle);
+  const simRows=[];
+  for(let i=0;i<=20;i++){
+    const t=parseFloat((i*dt).toFixed(2));
+    const x=parseFloat((vx*t).toFixed(4));
+    const y=parseFloat((vy*t-0.5*g*t*t).toFixed(4));
+    if(y<0&&i>0)break;
+    simRows.push({t:t.toString(),x:x.toString(),y:Math.max(0,y).toString()});
+  }
+  rows=simRows;
+  active=new Set(['t','x','y','dx','dy','dr','sdr','vr','sin']);
+  autoEnabled=new Set(['dx','dy','dr','sdr','vr','sin']);
+  renderAll();
+  // switch to data tab to show the loaded data
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  const firstTab=document.querySelector('.tab');
+  if(firstTab){firstTab.classList.add('active');}
+  const dataPanel=document.getElementById('panel-data');
+  if(dataPanel){dataPanel.classList.add('active');}
+  curTab='data';
+}
+
+// ── MODALS ──
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+
+// ── SAVE RESULTS ──
+function openSaveResults(){
+  document.getElementById('modal-results').classList.add('open');
+}
+function saveResults(){
+  const fmt=document.getElementById('res-format').value;
+  closeModal('modal-results');
+  const panel=document.getElementById('results-ct');
+  if(!panel||!panel.innerHTML.trim()){alert('No results to save. Go to the results tab first.');return;}
+
+  // build a clean snapshot div
+  const snap=document.createElement('div');
+  snap.style.cssText=`font-family:monospace;background:#fff;color:#111;padding:28px;width:820px`;
+  snap.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid #e5e3dc">
+      <div style="width:32px;height:32px;background:#185FA5;border-radius:7px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:14px">M</div>
+      <div><div style="font-size:15px;font-weight:700">MotionLab Pro — Results Report</div><div style="font-size:10px;color:#999;letter-spacing:.06em">KINEMATIC ANALYSIS SUITE · ${new Date().toLocaleString()}</div></div>
+    </div>
+    ${panel.innerHTML}`;
+  // fix colors for light snapshot
+  snap.querySelectorAll('*').forEach(el=>{
+    const s=el.style;
+    ['color','background','backgroundColor','borderColor'].forEach(prop=>{
+      if(s[prop]&&s[prop].includes('var(--'))s[prop]='';
+    });
+  });
+
+  if(fmt==='png'){
+    import('https://esm.sh/html2canvas@1.4.1').then(mod=>{
+      mod.default(snap,{scale:2,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
+        const a=document.createElement('a');a.href=canvas.toDataURL('image/png');a.download='motionlab_results.png';a.click();
+      });
+    }).catch(()=>{snapToPNG(snap,'motionlab_results.png');});
+  } else {
+    savePanelAsPDF(snap,'motionlab_results.pdf');
+  }
+}
+
+// ── SAVE CHARTS ──
+function openSaveCharts(){
+  // build chart list
+  const list=document.getElementById('modal-chart-list');
+  list.innerHTML='';
+  const allCharts=[
+    {id:'xy',label:'x vs y — trajectory'},
+    ...getActive().map(p=>({id:p.id,label:`${p.sym} — ${p.name}`})),
+    {id:'va-combo',label:'velocity vᵣ vs acceleration aᴿ'}
+  ];
+  allCharts.forEach(c=>{
+    if(!chartInstances[c.id])return;
+    const item=document.createElement('label');
+    item.className='modal-chart-item';
+    item.innerHTML=`<input type="checkbox" checked value="${c.id}"/><span class="modal-chart-sym">${c.label.split('—')[0].trim()}</span><span class="modal-chart-nm">— ${(c.label.split('—')[1]||'').trim()}</span>`;
+    item.querySelector('input').onchange=ev=>item.classList.toggle('selected',ev.target.checked);
+    item.classList.add('selected');
+    list.appendChild(item);
+  });
+  document.getElementById('modal-charts').classList.add('open');
+}
+function saveCharts(){
+  const fmt=document.getElementById('chart-format').value;
+  const selected=[...document.querySelectorAll('#modal-chart-list input[type=checkbox]:checked')].map(i=>i.value);
+  closeModal('modal-charts');
+  if(!selected.length){alert('Select at least one chart.');return;}
+
+  if(fmt==='png'){
+    selected.forEach(id=>{
+      const canvas=document.getElementById('ch-'+id);
+      if(!canvas)return;
+      // draw on white background
+      const offscreen=document.createElement('canvas');
+      offscreen.width=canvas.width;offscreen.height=canvas.height;
+      const ctx=offscreen.getContext('2d');
+      ctx.fillStyle=isDark?'#0f1220':'#ffffff';
+      ctx.fillRect(0,0,offscreen.width,offscreen.height);
+      ctx.drawImage(canvas,0,0);
+      const a=document.createElement('a');a.href=offscreen.toDataURL('image/png');a.download=`motionlab_chart_${id}.png`;a.click();
+    });
+  } else {
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:'landscape',unit:'px',format:'a4'});
+    let first=true;
+    selected.forEach(id=>{
+      const canvas=document.getElementById('ch-'+id);
+      if(!canvas)return;
+      const offscreen=document.createElement('canvas');
+      offscreen.width=canvas.width||600;offscreen.height=canvas.height||300;
+      const ctx=offscreen.getContext('2d');
+      ctx.fillStyle=isDark?'#0f1220':'#ffffff';
+      ctx.fillRect(0,0,offscreen.width,offscreen.height);
+      ctx.drawImage(canvas,0,0);
+      const imgData=offscreen.toDataURL('image/png');
+      const pW=pdf.internal.pageSize.getWidth();
+      const pH=pdf.internal.pageSize.getHeight();
+      const ratio=Math.min((pW-40)/offscreen.width,(pH-60)/offscreen.height);
+      const iW=offscreen.width*ratio,iH=offscreen.height*ratio;
+      if(!first)pdf.addPage();
+      first=false;
+      pdf.setFontSize(10);pdf.setTextColor(100);
+      pdf.text(`MotionLab Pro — ${id}`,20,20);
+      pdf.addImage(imgData,'PNG',20,30,iW,iH);
+    });
+    pdf.save('motionlab_charts.pdf');
+  }
+}
+
+function savePanelAsPDF(el,filename){
+  document.body.appendChild(el);
+  el.style.position='absolute';el.style.left='-9999px';el.style.top='0';
+  import('https://esm.sh/html2canvas@1.4.1').then(mod=>{
+    mod.default(el,{scale:1.5,backgroundColor:'#ffffff',useCORS:true}).then(canvas=>{
+      document.body.removeChild(el);
+      const {jsPDF}=window.jspdf;
+      const pdf=new jsPDF({unit:'px',format:'a4'});
+      const pW=pdf.internal.pageSize.getWidth();
+      const pH=pdf.internal.pageSize.getHeight();
+      const ratio=Math.min(pW/canvas.width,(pH-20)/canvas.height);
+      pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,10,canvas.width*ratio,canvas.height*ratio);
+      pdf.save(filename);
+    });
+  }).catch(()=>{document.body.removeChild(el);alert('PDF export requires internet connection.');});
 }
 
 function renderAll(){renderSidebar();renderTable();renderStats();if(curTab==='results')renderResults();if(curTab==='charts')renderCharts();if(curTab==='formulas')renderFormulas();}
