@@ -1,4 +1,4 @@
 # MotionLab-Pro
-Motion analysis tool.
+> Motion analysis tool.
 
 Demo : [MotionLab Pro](https://motion-lab-pro.vercel.app)
