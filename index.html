@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>MotionLab Pro</title>
 <link rel="stylesheet" href="../style.css" ></linke>
+
 </head>
 <body>
 
 <div class="nav">
   <div class="brand">
-    <div class="brand-logo">
+    <div class="brand-logo"> 
       <img src="./logo/motionlab.png" alt="MotionLab logo"/>
     </div>
     <div>
@@ -20,15 +21,13 @@
   </div>
   <div class="nav-right">
     <button class="dm-toggle" onclick="toggleDark()" title="Toggle dark/light mode">
-      <span class="dm-icon sun">☀</span>
-      <span class="dm-knob" id="dm-knob"></span>
-      <span class="dm-icon moon">☾</span>
+      <span class="dm-icon sun">☀</span><span class="dm-knob" id="dm-knob"></span><span class="dm-icon moon">☾</span>
     </button>
     <button class="nbtn" onclick="clearAll()">clear</button>
     <button class="nbtn" onclick="importCSV()">import csv</button>
     <button class="nbtn" onclick="exportCSV()">export csv</button>
     <button class="nbtn accent" onclick="addRow()">+ row</button>
-    <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleCSVFile(event)"/>
+    <input type="file" id="csv-inp" accept=".csv" style="display:none" onchange="handleCSVFile(event)"/>
   </div>
 </div>
 
@@ -39,17 +38,18 @@
     <div class="sec-lbl">Auto-calculated</div>
     <div id="pblist-auto"></div>
   </div>
-
   <div class="right">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-      <div class="tabs" style="margin-bottom:0">
+    <div class="toolbar">
+      <div class="tabs">
         <button class="tab active" onclick="switchTab('data',this)">data entry</button>
         <button class="tab" onclick="switchTab('results',this)">results</button>
         <button class="tab" onclick="switchTab('charts',this)">graphs</button>
         <button class="tab" onclick="switchTab('formulas',this)">formulas</button>
+        <button class="tab" onclick="switchTab('ccode',this)">C code</button>
       </div>
-      <div style="width:1px;height:24px;background:var(--border2);flex-shrink:0"></div>
-      <button class="nbtn" style="font-size:11px;padding:5px 13px;border-color:var(--purple);color:var(--purple)" onclick="loadSimulateData()" title="Load sample projectile motion data">▶ simulate</button>
+      <div class="divider"></div>
+      <button class="nbtn" style="border-color:var(--purple);color:var(--purple)" onclick="loadSimulateData()">▶ simulate</button>
+      <button class="nbtn" style="border-color:var(--amber);color:var(--amber)" onclick="switchTab('ccode',document.querySelector('.tab:nth-child(5)'));generateCCode()">{ } C code</button>
     </div>
 
     <div class="panel active" id="panel-data">
@@ -59,27 +59,31 @@
         <div id="tbl-ct"></div>
         <div class="tbl-footer">
           <button class="tbl-foot-btn add" onclick="addRow()">+ add row</button>
-          <button class="tbl-foot-btn del" onclick="deleteLastRow()" title="Delete last row">− delete row</button>
+          <button class="tbl-foot-btn del" onclick="deleteLastRow()">− delete row</button>
         </div>
       </div>
     </div>
 
     <div class="panel" id="panel-results">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-        <button class="nbtn" onclick="openSaveResults()" style="font-size:11px">↓ save results</button>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:9px">
+        <button class="nbtn" onclick="openSaveResults()">↓ save results</button>
       </div>
       <div id="results-ct"></div>
     </div>
 
     <div class="panel" id="panel-charts">
-      <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-        <button class="nbtn" onclick="openSaveCharts()" style="font-size:11px">↓ save graphs</button>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:9px">
+        <button class="nbtn" onclick="openSaveCharts()">↓ save graphs</button>
       </div>
       <div id="charts-ct"></div>
     </div>
 
     <div class="panel" id="panel-formulas">
       <div id="formulas-ct"></div>
+    </div>
+
+    <div class="panel" id="panel-ccode">
+      <div id="ccode-ct"></div>
     </div>
   </div>
 </div>
@@ -107,7 +111,7 @@
   <div class="modal">
     <div class="modal-title">Save Graphs</div>
     <div class="modal-row">
-      <div class="modal-lbl">Select charts to save</div>
+      <div class="modal-lbl">Select charts</div>
       <div class="modal-chart-list" id="modal-chart-list"></div>
     </div>
     <div class="modal-row">
